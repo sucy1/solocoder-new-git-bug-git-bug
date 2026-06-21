@@ -1,0 +1,14 @@
+
+################################################################################
+# COMMIT MESSAGE FORMAT
+#
+# See //doc/contrib:commit-message-guidelines.md for more information.
+#
+# ```
+# <type>[optional scope][!]: <subject>
+#
+# [optional body]
+#
+# [optional footer(s)]
+# ```
+################################################################################
