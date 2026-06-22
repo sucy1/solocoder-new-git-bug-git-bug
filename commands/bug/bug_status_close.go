@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/git-bug/git-bug/commands/execenv"
+	"github.com/git-bug/git-bug/entities/webhook"
 )
 
 func newBugStatusCloseCommand(env *execenv.Env) *cobra.Command {
@@ -31,5 +32,16 @@ func runBugStatusClose(env *execenv.Env, args []string) error {
 		return err
 	}
 
-	return b.Commit()
+	err = b.Commit()
+	if err != nil {
+		return err
+	}
+
+	snap := b.Snapshot()
+	_ = webhook.TriggerWebhooks(env.Repo.AnyConfig(), "close", b.Id().Human(), map[string]interface{}{
+		"title":  snap.Title,
+		"status": snap.Status.String(),
+	})
+
+	return nil
 }

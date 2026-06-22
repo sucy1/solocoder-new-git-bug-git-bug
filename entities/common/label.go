@@ -4,6 +4,8 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"image/color"
+	"regexp"
+	"strconv"
 
 	fcolor "github.com/fatih/color"
 
@@ -16,9 +18,41 @@ func (l Label) String() string {
 	return string(l)
 }
 
-// RGBA from a Label computed in a deterministic way
-func (l Label) Color() LabelColor {
-	// colors from: https://material-ui.com/style/color/
+var DefaultLabelColor = LabelColor{R: 158, G: 158, B: 158, A: 255}
+
+var hexColorRegex = regexp.MustCompile(`^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$`)
+
+func ParseHexColor(s string) (LabelColor, error) {
+	if !hexColorRegex.MatchString(s) {
+		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
+	}
+
+	hex := s
+	if len(hex) > 0 && hex[0] == '#' {
+		hex = hex[1:]
+	}
+
+	if len(hex) == 3 {
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	}
+
+	r, err := strconv.ParseUint(hex[0:2], 16, 8)
+	if err != nil {
+		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
+	}
+	g, err := strconv.ParseUint(hex[2:4], 16, 8)
+	if err != nil {
+		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
+	}
+	b, err := strconv.ParseUint(hex[4:6], 16, 8)
+	if err != nil {
+		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
+	}
+
+	return LabelColor{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, nil
+}
+
+func (l Label) DefaultColor() LabelColor {
 	colors := []LabelColor{
 		{R: 244, G: 67, B: 54, A: 255},   // red
 		{R: 233, G: 30, B: 99, A: 255},   // pink
@@ -48,6 +82,10 @@ func (l Label) Color() LabelColor {
 	}
 
 	return colors[id]
+}
+
+func (l Label) Color() LabelColor {
+	return l.DefaultColor()
 }
 
 func (l Label) Validate() error {

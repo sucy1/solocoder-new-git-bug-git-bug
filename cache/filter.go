@@ -2,6 +2,7 @@ package cache
 
 import (
 	"strings"
+	"time"
 
 	"github.com/git-bug/git-bug/entities/common"
 	"github.com/git-bug/git-bug/entity"
@@ -109,6 +110,20 @@ func NoLabelFilter() Filter {
 	}
 }
 
+// SinceFilter return a Filter that matches bugs created on or after the given time
+func SinceFilter(since time.Time) Filter {
+	return func(excerpt *BugExcerpt, resolvers entity.Resolvers) bool {
+		return !excerpt.CreateTime().Before(since)
+	}
+}
+
+// UntilFilter return a Filter that matches bugs created on or before the given time
+func UntilFilter(until time.Time) Filter {
+	return func(excerpt *BugExcerpt, resolvers entity.Resolvers) bool {
+		return !excerpt.CreateTime().After(until)
+	}
+}
+
 // Matcher is a collection of Filter that implement a complex filter
 type Matcher struct {
 	Status      []Filter
@@ -119,6 +134,8 @@ type Matcher struct {
 	Label       []Filter
 	Title       []Filter
 	NoFilters   []Filter
+	Since       []Filter
+	Until       []Filter
 }
 
 // compileMatcher transform a query.Filters into a specialized matcher
@@ -149,6 +166,13 @@ func compileMatcher(filters query.Filters) *Matcher {
 	}
 	if filters.NoLabel {
 		result.NoFilters = append(result.NoFilters, NoLabelFilter())
+	}
+
+	if !filters.Since.IsZero() {
+		result.Since = append(result.Since, SinceFilter(filters.Since))
+	}
+	if !filters.Until.IsZero() {
+		result.Until = append(result.Until, UntilFilter(filters.Until))
 	}
 
 	return result
@@ -185,6 +209,14 @@ func (f *Matcher) Match(excerpt *BugExcerpt, resolvers entity.Resolvers) bool {
 	}
 
 	if match := f.andMatch(f.Title, excerpt, resolvers); !match {
+		return false
+	}
+
+	if match := f.andMatch(f.Since, excerpt, resolvers); !match {
+		return false
+	}
+
+	if match := f.andMatch(f.Until, excerpt, resolvers); !match {
 		return false
 	}
 

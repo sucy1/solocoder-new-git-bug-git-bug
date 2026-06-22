@@ -45,8 +45,8 @@ func (r RootResolver) Identity() graph.IdentityResolver {
 	return &identityResolver{}
 }
 
-func (RootResolver) Label() graph.LabelResolver {
-	return &labelResolver{}
+func (r RootResolver) Label() graph.LabelResolver {
+	return &labelResolver{cache: r.MultiRepoCache}
 }
 
 func (RootResolver) Repository() graph.RepositoryResolver {

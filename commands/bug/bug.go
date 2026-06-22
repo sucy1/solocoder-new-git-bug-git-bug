@@ -32,6 +32,8 @@ type bugOptions struct {
 	sortDirection       string
 	outputFormat        string
 	outputFormatChanged bool
+	since               string
+	until               string
 }
 
 func NewBugCommand(env *execenv.Env) *cobra.Command {
@@ -98,6 +100,10 @@ git bug status:open --by creation "foo bar" baz
 		"Select the output formatting style. Valid values are [default,plain,id,json,org-mode]")
 	cmd.RegisterFlagCompletionFunc("format",
 		completion.From([]string{"default", "plain", "id", "json", "org-mode"}))
+	flags.StringVar(&options.since, "since", "",
+		"Filter bugs created on or after this date (YYYY-MM-DD format)")
+	flags.StringVar(&options.until, "until", "",
+		"Filter bugs created on or before this date (YYYY-MM-DD format)")
 
 	const selectGroup = "select"
 	cmd.AddGroup(&cobra.Group{ID: selectGroup, Title: "Implicit selection"})
@@ -117,6 +123,7 @@ git bug status:open --by creation "foo bar" baz
 	cmd.AddCommand(newBugShowCommand(env))
 	cmd.AddCommand(newBugStatusCommand(env))
 	cmd.AddCommand(newBugTitleCommand(env))
+	cmd.AddCommand(newBugBatchCommand(env))
 
 	return cmd
 }
@@ -239,7 +246,8 @@ func bugsDefaultFormatter(env *execenv.Env, excerpts []*cache.BugExcerpt) error 
 
 		var labelsTxt strings.Builder
 		for _, l := range b.Labels {
-			lc256 := l.Color().Term256()
+			labelColor := common.GetLabelColor(env.Repo.AnyConfig(), l)
+			lc256 := labelColor.Term256()
 			labelsTxt.WriteString(lc256.Escape())
 			labelsTxt.WriteString(" ◼")
 			labelsTxt.WriteString(lc256.Unescape())
@@ -408,6 +416,21 @@ func completeQuery(q *query.Query, opts bugOptions) error {
 		q.OrderDirection = query.OrderDescending
 	default:
 		return fmt.Errorf("unknown sort direction %s", opts.sortDirection)
+	}
+
+	if opts.since != "" {
+		since, err := time.Parse("2006-01-02", opts.since)
+		if err != nil {
+			return fmt.Errorf("invalid --since date format: %w. Expected YYYY-MM-DD", err)
+		}
+		q.Since = since
+	}
+	if opts.until != "" {
+		until, err := time.Parse("2006-01-02", opts.until)
+		if err != nil {
+			return fmt.Errorf("invalid --until date format: %w. Expected YYYY-MM-DD", err)
+		}
+		q.Until = until
 	}
 
 	return nil

@@ -1,6 +1,8 @@
 package query
 
 import (
+	"time"
+
 	"github.com/git-bug/git-bug/entities/common"
 )
 
@@ -41,6 +43,8 @@ type Filters struct {
 	Label       []string
 	Title       []string
 	NoLabel     bool
+	Since       time.Time
+	Until       time.Time
 }
 
 type OrderBy int

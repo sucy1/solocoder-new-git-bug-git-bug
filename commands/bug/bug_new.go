@@ -5,6 +5,7 @@ import (
 
 	buginput "github.com/git-bug/git-bug/commands/bug/input"
 	"github.com/git-bug/git-bug/commands/execenv"
+	"github.com/git-bug/git-bug/entities/webhook"
 	"github.com/git-bug/git-bug/util/text"
 )
 
@@ -71,6 +72,13 @@ func runBugNew(env *execenv.Env, opts bugNewOptions) error {
 	}
 
 	env.Out.Printf("%s created\n", b.Id().Human())
+
+	snap := b.Snapshot()
+	_ = webhook.TriggerWebhooks(env.Repo.AnyConfig(), "create", b.Id().Human(), map[string]interface{}{
+		"title":  snap.Title,
+		"status": snap.Status.String(),
+		"author": snap.Author.DisplayName(),
+	})
 
 	return nil
 }
