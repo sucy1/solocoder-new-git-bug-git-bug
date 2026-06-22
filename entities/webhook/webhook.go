@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -131,6 +132,7 @@ func sendWebhook(url string, payload []byte) {
 
 	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payload))
 	if err != nil {
+		log.Printf("webhook: failed to create request for %s: %v", url, err)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
@@ -138,9 +140,14 @@ func sendWebhook(url string, payload []byte) {
 
 	resp, err := client.Do(req)
 	if err != nil {
+		log.Printf("webhook: failed to send to %s: %v", url, err)
 		return
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Printf("webhook: non-2xx response from %s: %d", url, resp.StatusCode)
+	}
 }
 
 func matchesEvent(subscribed []string, event string) bool {

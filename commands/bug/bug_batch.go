@@ -200,16 +200,8 @@ func cleanBugID(s string) string {
 	s = strings.TrimSpace(s)
 	s = strings.TrimPrefix(s, "\ufeff")
 	s = strings.TrimPrefix(s, "\xef\xbb\xbf")
-	var b strings.Builder
-	b.Grow(len(s))
-	for _, r := range s {
-		if r < 32 || r == 127 {
-			continue
-		}
-		if r == ' ' || r == '\t' {
-			continue
-		}
-		b.WriteRune(r)
-	}
-	return b.String()
+	s = strings.TrimRightFunc(s, func(r rune) bool {
+		return r == '\r' || r == '\n' || r == 0
+	})
+	return s
 }

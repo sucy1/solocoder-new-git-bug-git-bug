@@ -21,7 +21,7 @@ func (l Label) String() string {
 
 var DefaultLabelColor = LabelColor{R: 158, G: 158, B: 158, A: 255}
 
-var hexColorRegex = regexp.MustCompile(`^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$`)
+var hexColorRegex = regexp.MustCompile(`^#?([0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})$`)
 
 func ParseHexColor(s string) (LabelColor, error) {
 	s = strings.TrimSpace(s)
@@ -34,8 +34,13 @@ func ParseHexColor(s string) (LabelColor, error) {
 		hex = hex[1:]
 	}
 
-	if len(hex) == 3 {
-		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2]})
+	switch len(hex) {
+	case 3:
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2], 'f', 'f'})
+	case 4:
+		hex = string([]byte{hex[0], hex[0], hex[1], hex[1], hex[2], hex[2], hex[3], hex[3]})
+	case 6:
+		hex = hex + "ff"
 	}
 
 	r, err := strconv.ParseUint(hex[0:2], 16, 8)
@@ -50,8 +55,12 @@ func ParseHexColor(s string) (LabelColor, error) {
 	if err != nil {
 		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
 	}
+	a, err := strconv.ParseUint(hex[6:8], 16, 8)
+	if err != nil {
+		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
+	}
 
-	return LabelColor{R: uint8(r), G: uint8(g), B: uint8(b), A: 255}, nil
+	return LabelColor{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}, nil
 }
 
 func (l Label) DefaultColor() LabelColor {
