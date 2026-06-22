@@ -38,10 +38,16 @@ func runBugStatusClose(env *execenv.Env, args []string) error {
 	}
 
 	snap := b.Snapshot()
-	_ = webhook.TriggerWebhooks(env.Repo.AnyConfig(), "close", b.Id().Human(), map[string]interface{}{
-		"title":  snap.Title,
-		"status": snap.Status.String(),
-	})
+	cfg := env.Repo.AnyConfig()
+	bugID := b.Id().Human()
+	title := snap.Title
+	status := snap.Status.String()
+	go func() {
+		_ = webhook.TriggerWebhooks(cfg, "close", bugID, map[string]interface{}{
+			"title":  title,
+			"status": status,
+		})
+	}()
 
 	return nil
 }

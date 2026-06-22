@@ -75,8 +75,10 @@ func runBugBatch(env *execenv.Env, opts batchOptions) error {
 
 	var bugIDs []string
 	scanner := bufio.NewScanner(os.Stdin)
+	buf := make([]byte, 0, 1024*1024)
+	scanner.Buffer(buf, 1024*1024)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
+		line := cleanBugID(scanner.Text())
 		if line != "" {
 			bugIDs = append(bugIDs, line)
 		}
@@ -192,4 +194,22 @@ func processBugBatch(env *execenv.Env, idStr string, opts batchOptions) batchRes
 		success: true,
 		message: strings.Join(messages, "; "),
 	}
+}
+
+func cleanBugID(s string) string {
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "\ufeff")
+	s = strings.TrimPrefix(s, "\xef\xbb\xbf")
+	var b strings.Builder
+	b.Grow(len(s))
+	for _, r := range s {
+		if r < 32 || r == 127 {
+			continue
+		}
+		if r == ' ' || r == '\t' {
+			continue
+		}
+		b.WriteRune(r)
+	}
+	return b.String()
 }

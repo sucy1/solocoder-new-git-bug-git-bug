@@ -74,11 +74,18 @@ func runBugNew(env *execenv.Env, opts bugNewOptions) error {
 	env.Out.Printf("%s created\n", b.Id().Human())
 
 	snap := b.Snapshot()
-	_ = webhook.TriggerWebhooks(env.Repo.AnyConfig(), "create", b.Id().Human(), map[string]interface{}{
-		"title":  snap.Title,
-		"status": snap.Status.String(),
-		"author": snap.Author.DisplayName(),
-	})
+	cfg := env.Repo.AnyConfig()
+	bugID := b.Id().Human()
+	title := snap.Title
+	status := snap.Status.String()
+	author := snap.Author.DisplayName()
+	go func() {
+		_ = webhook.TriggerWebhooks(cfg, "create", bugID, map[string]interface{}{
+			"title":  title,
+			"status": status,
+			"author": author,
+		})
+	}()
 
 	return nil
 }

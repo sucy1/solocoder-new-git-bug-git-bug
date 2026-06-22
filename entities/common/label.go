@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"regexp"
 	"strconv"
+	"strings"
 
 	fcolor "github.com/fatih/color"
 
@@ -23,6 +24,7 @@ var DefaultLabelColor = LabelColor{R: 158, G: 158, B: 158, A: 255}
 var hexColorRegex = regexp.MustCompile(`^#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$`)
 
 func ParseHexColor(s string) (LabelColor, error) {
+	s = strings.TrimSpace(s)
 	if !hexColorRegex.MatchString(s) {
 		return DefaultLabelColor, fmt.Errorf("invalid hex color: %s", s)
 	}
@@ -109,9 +111,9 @@ func (lc LabelColor) RGBA() color.RGBA {
 }
 
 func (lc LabelColor) Term256() Term256 {
-	red := Term256(lc.R) * 6 / 256
-	green := Term256(lc.G) * 6 / 256
-	blue := Term256(lc.B) * 6 / 256
+	red := Term256((int(lc.R)*5 + 127) / 255)
+	green := Term256((int(lc.G)*5 + 127) / 255)
+	blue := Term256((int(lc.B)*5 + 127) / 255)
 
 	return red*36 + green*6 + blue + 16
 }
